@@ -28,12 +28,12 @@ enum class AccessType { Unknown = 0, Lookup, Scan, Index };
 
 enum class ArcStatus { MRU, MFU, MRU_GHOST, MFU_GHOST };
 
-// TODO(student): You can modify or remove this struct as you like.
 struct FrameStatus {
-  page_id_t page_id_;
-  frame_id_t frame_id_;
-  bool evictable_;
-  ArcStatus arc_status_;
+  page_id_t page_id_{INVALID_PAGE_ID};
+  frame_id_t frame_id_{INVALID_FRAME_ID};
+  bool evictable_{false};
+  ArcStatus arc_status_{ArcStatus::MRU};
+  FrameStatus() = default;
   FrameStatus(page_id_t pid, frame_id_t fid, bool ev, ArcStatus st)
       : page_id_(pid), frame_id_(fid), evictable_(ev), arc_status_(st) {}
 };
@@ -48,7 +48,6 @@ class ArcReplacer {
   DISALLOW_COPY_AND_MOVE(ArcReplacer);
 
   /**
-   * TODO(P1): Add implementation
    *
    * @brief Destroys the LRUReplacer.
    */
@@ -61,20 +60,10 @@ class ArcReplacer {
   auto Size() -> size_t;
 
  private:
-  // TODO(student): implement me! You can replace or remove these member variables as you like.
-  std::list<frame_id_t> mru_;
-  std::list<frame_id_t> mfu_;
+  std::list<std::tuple<page_id_t, frame_id_t>> mru_;
+  std::list<std::tuple<page_id_t, frame_id_t>> mfu_;
   std::list<page_id_t> mru_ghost_;
   std::list<page_id_t> mfu_ghost_;
-
-  /* record entries in mru_ and mfu_
-   * this uses frame_id_t to guarantee no duplicate records for the same
-   * frame when they are alive */
-  std::unordered_map<frame_id_t, std::shared_ptr<FrameStatus>> alive_map_;
-  /* record entries in mru_ghost_ and mfu_ghost_
-   * this uses page_id_t but not frame_id_t because page_id is the unique
-   * identifier in ghost lists */
-  std::unordered_map<page_id_t, std::shared_ptr<FrameStatus>> ghost_map_;
 
   /* alive, evictable entries count */
   [[maybe_unused]] size_t curr_size_{0};
@@ -84,7 +73,15 @@ class ArcReplacer {
   [[maybe_unused]] size_t replacer_size_;
   std::mutex latch_;
 
-  // TODO(student): You can add member variables / functions as you like.
-};
+  // live pages: find the node for a frame in MRU/MFU in O(1)
+  std::unordered_map<frame_id_t, std::list<std::tuple<page_id_t, frame_id_t>>::iterator> mru_pos_;
+  std::unordered_map<frame_id_t, std::list<std::tuple<page_id_t, frame_id_t>>::iterator> mfu_pos_;
 
+  // ghost pages: find the node for a page_id in ghost lists in O(1)
+  std::unordered_map<page_id_t, std::list<page_id_t>::iterator> mru_ghost_pos_;
+  std::unordered_map<page_id_t, std::list<page_id_t>::iterator> mfu_ghost_pos_;
+
+  // track the status of frames in mru and mfu lists
+  std::unordered_map<frame_id_t, FrameStatus> meta_;
+};
 }  // namespace bustub

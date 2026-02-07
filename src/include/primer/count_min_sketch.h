@@ -12,8 +12,10 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -84,6 +86,7 @@ class CountMinSketch {
   uint32_t depth_;  // Number of independent hash functions
   /** Pre-computed hash functions for each row */
   std::vector<std::function<size_t(const KeyType &)>> hash_functions_;
+  std::unique_ptr<std::atomic<uint32_t>[]> hash_matrix_;
 
   /** @spring2026 PLEASE DO NOT MODIFY THE FOLLOWING */
   constexpr static size_t SEED_BASE = 15445;
@@ -103,6 +106,10 @@ class CountMinSketch {
   }
 
   /** @todo (student) can add their data structures that support count-min sketch operations */
+  inline auto Cell(size_t row, size_t col) -> std::atomic<uint32_t> & { return hash_matrix_[row * width_ + col]; }
+  inline auto Cell(size_t row, size_t col) const -> const std::atomic<uint32_t> & {
+    return hash_matrix_[row * width_ + col];
+  }
 };
 
 }  // namespace bustub
