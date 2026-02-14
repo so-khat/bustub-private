@@ -51,7 +51,7 @@ void DiskScheduler::Schedule(std::vector<DiskRequest> &requests) {
  */
 void DiskScheduler::StartWorkerThread() {
   // infinite loop till stopped
-  while(true) {
+  while (true) {
     // get the next request from the queue
     auto dr = request_queue_.Get();
     // if nullopt, terminate the thread
@@ -64,7 +64,7 @@ void DiskScheduler::StartWorkerThread() {
     } else {
       disk_manager_->ReadPage(dr->page_id_, dr->data_);
     }
-     dr->callback_.set_value(true);
+    dr->callback_.set_value(true);
   }
 }
 

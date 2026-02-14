@@ -94,10 +94,9 @@ class FrameHeader {
    * currently storing. This might allow you to skip searching for the corresponding (page ID, frame ID) pair somewhere
    * else in the buffer pool manager...
    */
-   
+
   /** @brief The page id currently stored in this frame, or INVALID_PAGE_ID if empty. */
   page_id_t page_id_{INVALID_PAGE_ID};
-
 };
 
 /**

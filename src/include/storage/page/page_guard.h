@@ -69,8 +69,9 @@ class ReadPageGuard {
  private:
   /** @brief Only the buffer pool manager is allowed to construct a valid `ReadPageGuard.` */
   explicit ReadPageGuard(page_id_t page_id, std::shared_ptr<FrameHeader> frame, std::shared_ptr<ArcReplacer> replacer,
-                          std::shared_ptr<std::mutex> bpm_latch, std::shared_ptr<DiskScheduler> disk_scheduler, bool already_latched);
-  
+                         std::shared_ptr<std::mutex> bpm_latch, std::shared_ptr<DiskScheduler> disk_scheduler,
+                         bool already_latched);
+
   /** @brief The page ID of the page we are guarding. */
   page_id_t page_id_;
 
@@ -176,7 +177,8 @@ class WritePageGuard {
  private:
   /** @brief Only the buffer pool manager is allowed to construct a valid `WritePageGuard.` */
   explicit WritePageGuard(page_id_t page_id, std::shared_ptr<FrameHeader> frame, std::shared_ptr<ArcReplacer> replacer,
-                          std::shared_ptr<std::mutex> bpm_latch, std::shared_ptr<DiskScheduler> disk_scheduler, bool already_latched);
+                          std::shared_ptr<std::mutex> bpm_latch, std::shared_ptr<DiskScheduler> disk_scheduler,
+                          bool already_latched);
 
   /** @brief The page ID of the page we are guarding. */
   page_id_t page_id_;
@@ -227,7 +229,7 @@ class WritePageGuard {
    *
    * If you want extra (nonexistent) style points, and you want to be extra fancy, then you can look into the
    * `std::unique_lock` type and use that for the latching mechanism instead of manually calling `lock` and `unlock`.
-   */                   
+   */
 };
 
 }  // namespace bustub

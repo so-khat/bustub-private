@@ -115,7 +115,6 @@ auto ReadPageGuard::operator=(ReadPageGuard &&that) noexcept -> ReadPageGuard & 
   return *this;
 }
 
-
 /**
  * @brief Gets the page ID of the page this guard is protecting.
  */
@@ -197,14 +196,16 @@ void ReadPageGuard::Drop() {
     return;
   }
 
-  frame_->pin_count_.fetch_sub(1);
+  auto new_pin = frame_->pin_count_.fetch_sub(1) - 1;
 
   // Unlock frame first to avoid deadlock with BPM paths that lock bpm_latch_ then frame latch.
   frame_->rwlatch_.unlock_shared();
 
-  if (frame_->pin_count_.load() == 0) {
+  if (new_pin == 0) {
     std::scoped_lock<std::mutex> lk(*bpm_latch_);
-    replacer_->SetEvictable(frame_->frame_id_, true);
+    if (frame_->pin_count_.load() == 0) {
+      replacer_->SetEvictable(frame_->frame_id_, true);
+    }
   }
 
   is_valid_ = false;
@@ -214,7 +215,6 @@ void ReadPageGuard::Drop() {
   bpm_latch_.reset();
   disk_scheduler_.reset();
 }
-
 
 /** @brief The destructor for `ReadPageGuard`. This destructor simply calls `Drop()`. */
 ReadPageGuard::~ReadPageGuard() { Drop(); }
@@ -386,12 +386,12 @@ void WritePageGuard::Flush() {
   // Create request + future
   DiskRequest req;
   req.is_write_ = true;
-  req.data_ = frame_->GetDataMut();
+  req.data_ = const_cast<char *>(frame_->GetData());
   req.page_id_ = page_id_;
   auto promise = disk_scheduler_->CreatePromise();
   auto fut = promise.get_future();
   req.callback_ = std::move(promise);
-  
+
   std::vector<DiskRequest> requests;
   requests.push_back(std::move(req));
 
@@ -417,14 +417,16 @@ void WritePageGuard::Drop() {
     return;
   }
 
-  frame_->pin_count_.fetch_sub(1);
+  auto new_pin = frame_->pin_count_.fetch_sub(1) - 1;
 
   // Unlock frame first to avoid deadlock with BPM paths that lock bpm_latch_ then frame latch.
   frame_->rwlatch_.unlock();
 
-  if (frame_->pin_count_.load() == 0) {
+  if (new_pin == 0) {
     std::scoped_lock<std::mutex> lk(*bpm_latch_);
-    replacer_->SetEvictable(frame_->frame_id_, true);
+    if (frame_->pin_count_.load() == 0) {
+      replacer_->SetEvictable(frame_->frame_id_, true);
+    }
   }
 
   is_valid_ = false;
@@ -434,8 +436,6 @@ void WritePageGuard::Drop() {
   bpm_latch_.reset();
   disk_scheduler_.reset();
 }
-
-
 
 /** @brief The destructor for `WritePageGuard`. This destructor simply calls `Drop()`. */
 WritePageGuard::~WritePageGuard() { Drop(); }
